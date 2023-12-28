@@ -18,10 +18,11 @@ import java.util.UUID;
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
+    public final static String GAME_TOPIC_PATH = "/topic/game";
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
         registry.setApplicationDestinationPrefixes("/app")
-                .enableSimpleBroker("/queue");
+                .enableSimpleBroker(GAME_TOPIC_PATH);
     }
 
     @Override

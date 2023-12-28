@@ -1,35 +1,31 @@
 package com.example.prisoners.dilemma.controllers;
 
+import com.example.prisoners.dilemma.entities.Game;
 import com.example.prisoners.dilemma.services.ConnectionService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 
-@Controller
+@RestController
+@RequestMapping("/connection")
 public class ConnectionController {
 
     private final ConnectionService connectionService;
-
-    @Autowired
-    private SimpMessagingTemplate simpMessagingTemplate;
 
 
     public ConnectionController(ConnectionService connectionService){
         this.connectionService = connectionService;
     }
 
-    @MessageMapping("search")
-    public void searchForGame(
-            Principal user
-    ){
-        //simpMessagingTemplate.convertAndSendToUser(user.getName(), "/queue/specific-user","PONG");
-        connectionService.searchForGame(user.getName());
+    @CrossOrigin(origins = "*")
+    @PostMapping("search")
+    public ResponseEntity<String> searchForGame(Principal user){
+        Game game = connectionService.searchForGame(user);
+        return ResponseEntity.ok(game.getId().toString());
     }
+}
+
+record Temp(String id) {
+
 }
