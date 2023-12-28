@@ -1,16 +1,12 @@
 package com.example.prisoners.dilemma.services;
 
-import com.example.prisoners.dilemma.configurations.RabbitMQConfiguration;
 import com.example.prisoners.dilemma.entities.Game;
 import com.example.prisoners.dilemma.repositories.AvailableGamesRepo;
-import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.user.SimpUserRegistry;
 import org.springframework.stereotype.Service;
 
-import java.security.Principal;
 import java.util.Collection;
-import java.util.UUID;
 
 @Service
 public class ConnectionService {
@@ -34,29 +30,15 @@ public class ConnectionService {
     /**
      * Connect to applicable game, or create a new one if none exists.
      */
-    public Game  searchForGame(Principal userPrincipal) {
-        // TODO: IMPLEMENT AUTH
-        //  Optional<Game> game = gamesRepo.searchForGame(userPrincipal.getName());
-        String dummyUserId = UUID.randomUUID().toString();
+    public Game  searchForGame() {
+        // search for existing game to join
         Collection<Game> availableGames = gamesRepo.getAllAvailableGames();
         for(Game game: availableGames){
-            // TODO: implement compatibility criteria (money difference for ex?)
-            // game is not available anymore, it is in progress
-            gamesRepo.deleteGame(game.getId().toString());
             return game;
         }
 
         // No game found, create a new game
-        //rabbitTemplate.convertAndSend(RabbitMQConfiguration.NOT_STARTED_GAMES_QUEUE, newGameId);
-        // TODO: IMPLEMENT AUTH
-        //  return gamesRepo.createNewGame(userPrincipal.getName());
-
         return gamesRepo.createNewGame();
-    }
-
-    @RabbitListener(queues = RabbitMQConfiguration.DEAD_LETTER_QUEUE_NAME)
-    public void listen(String in) {
-        System.out.println("Message read from myQueue : " + in);
     }
 
     /**
@@ -80,6 +62,8 @@ public class ConnectionService {
                 .size();
 
         if(numberPlayersConnectedToGame == 2){
+            // game is not available anymore, it is in progress
+            gamesRepo.deleteGame(gameId);
             webSocketMessageSender.sendToSubscribers(gameId, MATCH_FOUND);
         }
     }
