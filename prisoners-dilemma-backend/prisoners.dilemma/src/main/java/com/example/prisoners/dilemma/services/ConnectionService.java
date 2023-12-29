@@ -3,9 +3,11 @@ package com.example.prisoners.dilemma.services;
 import com.example.prisoners.dilemma.entities.Game;
 import com.example.prisoners.dilemma.repositories.AvailableGamesRepo;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.user.SimpUser;
 import org.springframework.messaging.simp.user.SimpUserRegistry;
 import org.springframework.stereotype.Service;
 
+import java.security.Principal;
 import java.util.Collection;
 
 @Service
@@ -30,7 +32,10 @@ public class ConnectionService {
     /**
      * Connect to applicable game, or create a new one if none exists.
      */
-    public Game  searchForGame() {
+    public Game  searchForGame(Principal user) {
+        if(userAlreadyConnectedToGame(user)){
+            return null;
+        }
         // search for existing game to join
         Collection<Game> availableGames = gamesRepo.getAllAvailableGames();
         for(Game game: availableGames){
@@ -39,6 +44,13 @@ public class ConnectionService {
 
         // No game found, create a new game
         return gamesRepo.createNewGame();
+    }
+
+    private boolean userAlreadyConnectedToGame(Principal user) {
+       return simpUserRegistry.getUsers()
+               .stream()
+               .map(SimpUser::getPrincipal)
+               .anyMatch(principal -> principal == user);
     }
 
     /**
