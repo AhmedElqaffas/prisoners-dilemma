@@ -12,6 +12,11 @@ public class Game {
         this.createdAt = new Date(System.currentTimeMillis());
     }
 
+    public Game(UUID id){
+        this.id = id;
+        this.createdAt = new Date(System.currentTimeMillis());
+    }
+
     public Date getCreatedAt() {
         return createdAt;
     }

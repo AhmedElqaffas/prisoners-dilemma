@@ -19,6 +19,12 @@ public class AvailableGamesRepo {
         return game;
     }
 
+    public Game createNewGame(UUID gameId) {
+        Game game =  new Game(gameId);
+        availableGames.add(game);
+        return game;
+    }
+
     public void deleteGame(String gameId) {
         availableGames.removeIf(game -> game.getId().toString().equals(gameId));
     }

@@ -5,7 +5,6 @@ import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 import org.springframework.web.socket.messaging.SessionSubscribeEvent;
-import org.springframework.web.socket.messaging.SessionUnsubscribeEvent;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -31,18 +30,6 @@ public class WebSocketEventListener {
         connectionService.deleteGameAndNotifyUser(gameIdToWhichPlayerWasConnected);
     }
 
-
-    /**
-     * Called whenever a player unsubscribes to a game
-     * @param event
-     */
-    @EventListener
-    public void gameDisconnectionListener(SessionUnsubscribeEvent event) {
-    //    String gameId = getGameId(event.getMessage());
-
-     //   connectionService.deleteGameAndNotifyUser(gameId);
-    }
-
     /**
      * Called whenever a player subscribes to a game
      * @param event
@@ -53,7 +40,7 @@ public class WebSocketEventListener {
         String gameId = getGameId(headerAccessor);
 
         userSubscription.put(headerAccessor.getUser().getName(), gameId);
-        connectionService.notifyIfMatchFound(gameId);
+        connectionService.playerConnectedToGame(gameId);
     }
 
     private String getGameId(StompHeaderAccessor headerAccessor) {

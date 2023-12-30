@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.security.Principal;
 import java.util.Collection;
+import java.util.UUID;
 
 @Service
 public class ConnectionService {
@@ -30,20 +31,20 @@ public class ConnectionService {
     }
 
     /**
-     * Connect to applicable game, or create a new one if none exists.
+     * Finds the id of an applicable game to connect to, or return an id for a new game.
      */
-    public Game  searchForGame(Principal user) {
+    public UUID  searchForGame(Principal user) {
         if(userAlreadyConnectedToGame(user)){
             return null;
         }
         // search for existing game to join
         Collection<Game> availableGames = gamesRepo.getAllAvailableGames();
         for(Game game: availableGames){
-            return game;
+            return game.getId();
         }
 
         // No game found, create a new game
-        return gamesRepo.createNewGame();
+        return UUID.randomUUID();
     }
 
     private boolean userAlreadyConnectedToGame(Principal user) {
@@ -67,13 +68,16 @@ public class ConnectionService {
     /**
      * Called when a player subscribes (connects) to a game. If there are now two players connected,
      * then a message is sent to the players notifying them that a match is found.
+     * If this is the first player to connect, create a new game.
      * @param gameId
      */
-    public void notifyIfMatchFound(String gameId) {
+    public void playerConnectedToGame(String gameId) {
         int numberPlayersConnectedToGame = simpUserRegistry.findSubscriptions(subscription -> subscription.getDestination().equals("/topic/game/"+gameId))
                 .size();
 
-        if(numberPlayersConnectedToGame == 2){
+        if(numberPlayersConnectedToGame == 1){
+            gamesRepo.createNewGame(UUID.fromString(gameId));
+        } else if(numberPlayersConnectedToGame == 2){
             // game is not available anymore, it is in progress
             gamesRepo.deleteGame(gameId);
             webSocketMessageSender.sendToSubscribers(gameId, MATCH_FOUND);
