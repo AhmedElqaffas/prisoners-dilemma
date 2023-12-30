@@ -79,7 +79,11 @@ public class ConnectionService {
             gamesRepo.createNewGame(UUID.fromString(gameId));
         } else if(numberPlayersConnectedToGame == 2){
             // game is not available anymore, it is in progress
-            gamesRepo.deleteGame(gameId);
+            // if no game was deleted, then the other player has already disconnected
+            if(!gamesRepo.deleteGame(gameId)){
+                webSocketMessageSender.sendToSubscribers(gameId, PLAYER_DISCONNECTED);
+                return;
+            }
             webSocketMessageSender.sendToSubscribers(gameId, MATCH_FOUND);
         }
     }

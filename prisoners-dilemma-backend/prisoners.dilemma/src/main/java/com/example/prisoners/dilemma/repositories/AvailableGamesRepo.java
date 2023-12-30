@@ -25,7 +25,13 @@ public class AvailableGamesRepo {
         return game;
     }
 
-    public void deleteGame(String gameId) {
-        availableGames.removeIf(game -> game.getId().toString().equals(gameId));
+    /**
+     * Deletes a game from the available games that a player can connect to.
+     *
+     * @param gameId
+     * @return true, if any game was removed
+     */
+    public boolean deleteGame(String gameId) {
+        return availableGames.removeIf(game -> game.getId().toString().equals(gameId));
     }
 }
