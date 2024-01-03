@@ -11,14 +11,6 @@ public class OAuth2UserWithId extends DefaultOAuth2User {
 
     private UUID id;
 
-    /**
-     * Constructs a {@code DefaultOAuth2User} using the provided parameters.
-     *
-     * @param authorities      the authorities granted to the user
-     * @param attributes       the attributes about the user
-     * @param nameAttributeKey the key used to access the user's &quot;name&quot; from
-     *                         {@link #getAttributes()}
-     */
     public OAuth2UserWithId(Collection<? extends GrantedAuthority> authorities, Map<String, Object> attributes, String nameAttributeKey) {
         super(authorities, attributes, nameAttributeKey);
     }

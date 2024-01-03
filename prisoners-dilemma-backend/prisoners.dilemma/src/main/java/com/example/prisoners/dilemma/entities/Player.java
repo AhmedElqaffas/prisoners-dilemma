@@ -34,11 +34,16 @@ public class Player {
         return player;
     }
 
-    public PrisonerDilemmaAuthUser getId() {
+    public PrisonerDilemmaAuthUser getAuthUser() {
         return authUser;
     }
 
     public String getDisplayName() {
         return displayName;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return obj instanceof Player player && this.id.equals(player.id);
     }
 }

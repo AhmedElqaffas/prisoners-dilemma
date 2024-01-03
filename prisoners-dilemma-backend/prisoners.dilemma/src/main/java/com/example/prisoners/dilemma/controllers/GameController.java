@@ -1,9 +1,10 @@
 package com.example.prisoners.dilemma.controllers;
 
-import com.example.prisoners.dilemma.dtos.ChoiceDTO;
+import com.example.prisoners.dilemma.dtos.Choice;
 import com.example.prisoners.dilemma.dtos.OAuth2UserWithId;
+import com.example.prisoners.dilemma.exceptions.PlayerAlreadyPlayedException;
 import com.example.prisoners.dilemma.services.GameService;
-import org.springframework.http.ResponseEntity;
+import com.example.prisoners.dilemma.services.WebSocketMessageSender;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
@@ -15,18 +16,27 @@ import java.util.UUID;
 @Controller
 public class GameController {
 
+    private static final String PLAYER_ALREADY_PLAYED = "PLAYER_ALREADY_PLAYED";
+
     private GameService gameService;
-    public GameController(GameService gameService){
+    private final WebSocketMessageSender webSocketMessageSender;
+    public GameController(GameService gameService,
+                          WebSocketMessageSender webSocketMessageSender){
         this.gameService = gameService;
+        this.webSocketMessageSender = webSocketMessageSender;
     }
     @MessageMapping("/topic/game/{gameId}")
-    public ResponseEntity play(@RequestBody ChoiceDTO playerChoice, @DestinationVariable String gameId, OAuth2AuthenticationToken oAuthToken) throws Exception {
+    public void play(@RequestBody ChoiceDTO playerChoice, @DestinationVariable String gameId, OAuth2AuthenticationToken oAuthToken) {
         if(oAuthToken == null || !(oAuthToken.getPrincipal() instanceof OAuth2UserWithId)){
-            return ResponseEntity.status(401).build();
+            return;
         }
         UUID playerId = ((OAuth2UserWithId) oAuthToken.getPrincipal()).getId();
-        gameService.playerPlayed(playerId, playerChoice.choice(), gameId);
-
-        return ResponseEntity.ok().build();
+        try{
+            gameService.playerPlayed(playerId, playerChoice.choice(), UUID.fromString(gameId));
+        } catch (PlayerAlreadyPlayedException ex){
+            webSocketMessageSender.sendToSubscribers(gameId, "FIX: ONLY SEND TO USER, NOT TOPIC");
+        }
     }
+
+    record ChoiceDTO(Choice choice) { }
 }

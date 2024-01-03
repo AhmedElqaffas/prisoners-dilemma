@@ -1,5 +1,6 @@
 package com.example.prisoners.dilemma.services;
 
+import com.example.prisoners.dilemma.dtos.GameAndConnectedPlayers;
 import com.example.prisoners.dilemma.entities.Game;
 import com.example.prisoners.dilemma.repositories.AvailableGamesRepo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,7 +43,10 @@ public class ConnectionService {
             return null;
         }
         // search for existing game to join
-        Collection<Game> availableGames = availableGamesRepo.getAllAvailableGames();
+        Collection<Game> availableGames = availableGamesRepo.getAllAvailableGames()
+                .stream()
+                .map(GameAndConnectedPlayers::getGame)
+                .toList();
         for(Game game: availableGames){
             return game.getId();
         }
@@ -64,9 +68,9 @@ public class ConnectionService {
      * user that other player has disconnected.
      * @param gameId
      */
-    public void deleteGameAndNotifyUser(String gameId) {
+    public void deleteGameAndNotifyUser(UUID gameId) {
         availableGamesRepo.deleteGame(gameId);
-        webSocketMessageSender.sendToSubscribers(gameId, PLAYER_DISCONNECTED);
+        webSocketMessageSender.sendToSubscribers(gameId.toString(), PLAYER_DISCONNECTED);
     }
 
     /**
@@ -75,28 +79,29 @@ public class ConnectionService {
      * If this is the first player to connect, create a new game.
      * @param gameId
      */
-    public void playerConnectedToGame(String gameId) {
+    public void playerConnectedToGame(UUID gameId, UUID playerId) {
         int numberPlayersConnectedToGame = simpUserRegistry.findSubscriptions(subscription -> subscription.getDestination().equals("/topic/game/"+gameId))
                 .size();
 
         if(numberPlayersConnectedToGame == 1){
-            availableGamesRepo.createNewGame(UUID.fromString(gameId));
+            availableGamesRepo.createNewGame(gameId, playerId);
         } else if(numberPlayersConnectedToGame == 2){
-            startGame(gameId);
+            startGame(gameId, playerId);
         }
     }
 
-    private void startGame(String gameId) {
-        Optional<Game> game = availableGamesRepo.getGame(gameId);
-        if(game.isEmpty()){
+    private void startGame(UUID gameId, UUID secondPlayerId) {
+        Optional<GameAndConnectedPlayers> gameAndPlayers = availableGamesRepo.getGameAndPlayers(gameId);
+        if(gameAndPlayers.isEmpty()){
             // if no game was found, then the other player has already disconnected
-            webSocketMessageSender.sendToSubscribers(gameId, PLAYER_DISCONNECTED);
+            webSocketMessageSender.sendToSubscribers(gameId.toString(), PLAYER_DISCONNECTED);
             return;
         }
 
+        gameAndPlayers.get().addPlayer(secondPlayerId);
         // game is not available anymore, it is in progress
         availableGamesRepo.deleteGame(gameId);
-        gameService.startGame(game.get());
-        webSocketMessageSender.sendToSubscribers(gameId, MATCH_FOUND);
+        gameService.startGame(gameAndPlayers.get());
+        webSocketMessageSender.sendToSubscribers(gameId.toString(), MATCH_FOUND);
     }
 }

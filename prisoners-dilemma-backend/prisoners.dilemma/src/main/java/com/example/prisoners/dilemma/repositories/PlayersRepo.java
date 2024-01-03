@@ -7,6 +7,6 @@ import org.springframework.stereotype.Repository;
 import java.util.UUID;
 
 @Repository
-public interface PlayerRepo extends JpaRepository<Player, UUID> {
+public interface PlayersRepo extends JpaRepository<Player, UUID> {
 
 }

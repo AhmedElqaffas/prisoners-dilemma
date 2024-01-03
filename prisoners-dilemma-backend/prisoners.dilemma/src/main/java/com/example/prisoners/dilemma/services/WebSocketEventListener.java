@@ -1,13 +1,16 @@
 package com.example.prisoners.dilemma.services;
 
+import com.example.prisoners.dilemma.dtos.OAuth2UserWithId;
 import org.springframework.context.event.EventListener;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 import org.springframework.web.socket.messaging.SessionSubscribeEvent;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @Component
 public class WebSocketEventListener {
@@ -27,7 +30,7 @@ public class WebSocketEventListener {
     public void webSocketDisconnectionListener(SessionDisconnectEvent event) {
         StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
         String gameIdToWhichPlayerWasConnected = userSubscription.remove(headerAccessor.getUser().getName());
-        connectionService.deleteGameAndNotifyUser(gameIdToWhichPlayerWasConnected);
+        connectionService.deleteGameAndNotifyUser(UUID.fromString(gameIdToWhichPlayerWasConnected));
     }
 
     /**
@@ -36,11 +39,15 @@ public class WebSocketEventListener {
      */
     @EventListener
     public void gameConnectionListener(SessionSubscribeEvent event){
+
         StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
         String gameId = getGameId(headerAccessor);
 
-        userSubscription.put(headerAccessor.getUser().getName(), gameId);
-        connectionService.playerConnectedToGame(gameId);
+        if(event.getUser() instanceof OAuth2AuthenticationToken token
+            && token.getPrincipal() instanceof OAuth2UserWithId user){
+            userSubscription.put(user.getName(), gameId);
+            connectionService.playerConnectedToGame(UUID.fromString(gameId), user.getId());
+        }
     }
 
     private String getGameId(StompHeaderAccessor headerAccessor) {

@@ -12,9 +12,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/connection")
 public class ConnectionController {
-
     private final ConnectionService connectionService;
-
 
     public ConnectionController(ConnectionService connectionService){
         this.connectionService = connectionService;
