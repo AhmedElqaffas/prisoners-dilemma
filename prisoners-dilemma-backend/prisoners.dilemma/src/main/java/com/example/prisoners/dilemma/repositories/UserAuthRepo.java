@@ -7,5 +7,5 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface UserAuthRepo extends JpaRepository<PrisonerDilemmaAuthUser, UUID> {
-    Optional<PrisonerDilemmaAuthUser> findByEmail(String email);
+    Optional<PrisonerDilemmaAuthUser> findByUsername(String username);
 }

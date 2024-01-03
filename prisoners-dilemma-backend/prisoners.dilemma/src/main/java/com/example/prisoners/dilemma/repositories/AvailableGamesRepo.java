@@ -13,12 +13,6 @@ public class AvailableGamesRepo {
         return availableGames;
     }
 
-    public Game createNewGame() {
-        Game game =  new Game();
-        availableGames.add(game);
-        return game;
-    }
-
     public Game createNewGame(UUID gameId) {
         Game game =  new Game(gameId);
         availableGames.add(game);
@@ -33,5 +27,10 @@ public class AvailableGamesRepo {
      */
     public boolean deleteGame(String gameId) {
         return availableGames.removeIf(game -> game.getId().toString().equals(gameId));
+    }
+
+    public Optional<Game> getGame(String gameId) {
+        return availableGames.stream().filter(game -> game.getId().toString().equals(gameId))
+                .findFirst();
     }
 }

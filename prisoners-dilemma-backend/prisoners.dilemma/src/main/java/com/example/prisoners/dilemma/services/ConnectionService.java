@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.security.Principal;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -17,16 +18,19 @@ public class ConnectionService {
     private static final String MATCH_FOUND = "MATCH_FOUND";
     private static final String PLAYER_DISCONNECTED = "PLAYER_DISCONNECTED";
 
-    private final AvailableGamesRepo gamesRepo;
+    private final AvailableGamesRepo availableGamesRepo;
+    private final GameService gameService;
 
     private final WebSocketMessageSender webSocketMessageSender;
     @Autowired
     private SimpUserRegistry simpUserRegistry;
 
     public ConnectionService(AvailableGamesRepo gamesRepo,
+                             GameService gameService,
                              WebSocketMessageSender webSocketMessageSender){
 
-        this.gamesRepo = gamesRepo;
+        this.availableGamesRepo = gamesRepo;
+        this.gameService = gameService;
         this.webSocketMessageSender = webSocketMessageSender;
     }
 
@@ -38,7 +42,7 @@ public class ConnectionService {
             return null;
         }
         // search for existing game to join
-        Collection<Game> availableGames = gamesRepo.getAllAvailableGames();
+        Collection<Game> availableGames = availableGamesRepo.getAllAvailableGames();
         for(Game game: availableGames){
             return game.getId();
         }
@@ -51,7 +55,7 @@ public class ConnectionService {
        return simpUserRegistry.getUsers()
                .stream()
                .map(SimpUser::getPrincipal)
-               .anyMatch(principal -> principal == user);
+               .anyMatch(principal -> user.getName().equals(principal.getName()));
     }
 
     /**
@@ -61,7 +65,7 @@ public class ConnectionService {
      * @param gameId
      */
     public void deleteGameAndNotifyUser(String gameId) {
-        gamesRepo.deleteGame(gameId);
+        availableGamesRepo.deleteGame(gameId);
         webSocketMessageSender.sendToSubscribers(gameId, PLAYER_DISCONNECTED);
     }
 
@@ -76,15 +80,23 @@ public class ConnectionService {
                 .size();
 
         if(numberPlayersConnectedToGame == 1){
-            gamesRepo.createNewGame(UUID.fromString(gameId));
+            availableGamesRepo.createNewGame(UUID.fromString(gameId));
         } else if(numberPlayersConnectedToGame == 2){
-            // game is not available anymore, it is in progress
-            // if no game was deleted, then the other player has already disconnected
-            if(!gamesRepo.deleteGame(gameId)){
-                webSocketMessageSender.sendToSubscribers(gameId, PLAYER_DISCONNECTED);
-                return;
-            }
-            webSocketMessageSender.sendToSubscribers(gameId, MATCH_FOUND);
+            startGame(gameId);
         }
+    }
+
+    private void startGame(String gameId) {
+        Optional<Game> game = availableGamesRepo.getGame(gameId);
+        if(game.isEmpty()){
+            // if no game was found, then the other player has already disconnected
+            webSocketMessageSender.sendToSubscribers(gameId, PLAYER_DISCONNECTED);
+            return;
+        }
+
+        // game is not available anymore, it is in progress
+        availableGamesRepo.deleteGame(gameId);
+        gameService.startGame(game.get());
+        webSocketMessageSender.sendToSubscribers(gameId, MATCH_FOUND);
     }
 }

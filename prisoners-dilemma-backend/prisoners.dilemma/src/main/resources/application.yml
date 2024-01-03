@@ -6,6 +6,9 @@ spring:
           google:
             client-id: 775658257977-docb5s49tqddbtpoc9ljf83mb7cmi38r.apps.googleusercontent.com
             client-secret: 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
+            scope:
+              - email
+              - profile
 
 frontend:
   url: http://localhost:3000

@@ -1,9 +1,6 @@
 package com.example.prisoners.dilemma.entities;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -17,10 +14,13 @@ public class PrisonerDilemmaAuthUser implements UserDetails{
     @Id
     @GeneratedValue
     private UUID id;
+
+    @OneToOne(mappedBy = "authUser")
+    @PrimaryKeyJoinColumn
+    private Player player;
+
     private String username;
     private String password;
-
-    private String email;
 
     private boolean isAccountNonExpired = true;
     private boolean isAccountNonLocked  = true;
@@ -38,15 +38,19 @@ public class PrisonerDilemmaAuthUser implements UserDetails{
 
     }
 
-    private PrisonerDilemmaAuthUser(String username, String email, String picture){
+    private PrisonerDilemmaAuthUser(String username, String picture){
         this.username = username;
-        this.email = email;
         this.picture = picture;
         this.isExternal = true;
+        this.id = UUID.randomUUID();
     }
 
-    public static PrisonerDilemmaAuthUser newExternalUser(String username, String email, String picture){
-        return  new PrisonerDilemmaAuthUser(username, email, picture);
+    public static PrisonerDilemmaAuthUser newExternalUser(String username, String picture){
+        return new PrisonerDilemmaAuthUser(username, picture);
+    }
+
+    public UUID getId() {
+        return id;
     }
 
     @Override
@@ -84,15 +88,15 @@ public class PrisonerDilemmaAuthUser implements UserDetails{
         return username;
     }
 
-    public String getEmail() {
-        return email;
-    }
-
     public String getPicture() {
         return picture;
     }
 
     public void setPicture(String picture){
         this.picture = picture;
+    }
+
+    public void setPlayer(Player player) {
+        this.player = player;
     }
 }

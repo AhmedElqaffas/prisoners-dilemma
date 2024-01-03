@@ -1,5 +1,6 @@
 package com.example.prisoners.dilemma.configurations;
 
+import com.example.prisoners.dilemma.services.PrisonersDilemmaOAuthUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -23,6 +24,9 @@ public class ApplicationSecurityConfig {
     @Autowired
     private OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
 
+    @Autowired
+    private PrisonersDilemmaOAuthUserService oidcUserService;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception{
         return http
@@ -33,6 +37,8 @@ public class ApplicationSecurityConfig {
                 })
                 .oauth2Login(oauth2 -> {
                     oauth2.successHandler(oAuth2LoginSuccessHandler);
+                    oauth2.userInfoEndpoint(infoEndpoint ->
+                            infoEndpoint.userService(oidcUserService));
                 })
                 .formLogin(Customizer.withDefaults())
                 .build();
