@@ -11,10 +11,11 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     public final static String GAME_TOPIC_PATH = "/topic/game";
+    public final static String USER_QUEUE_PATH = "/queue/player";
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
         registry.setApplicationDestinationPrefixes("/app")
-                .enableSimpleBroker(GAME_TOPIC_PATH);
+                .enableSimpleBroker(GAME_TOPIC_PATH, USER_QUEUE_PATH);
     }
 
     @Override

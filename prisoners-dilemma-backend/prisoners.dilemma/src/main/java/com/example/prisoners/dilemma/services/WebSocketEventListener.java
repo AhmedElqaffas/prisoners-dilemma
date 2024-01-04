@@ -41,12 +41,17 @@ public class WebSocketEventListener {
     public void gameConnectionListener(SessionSubscribeEvent event){
 
         StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
-        String gameId = getGameId(headerAccessor);
-
+        UUID gameId;
+        try{
+            gameId = UUID.fromString(getGameId(headerAccessor));
+        } catch (IllegalArgumentException ex){
+            // not uuid, player is subscribing to user queue, not to a game
+            return;
+        }
         if(event.getUser() instanceof OAuth2AuthenticationToken token
             && token.getPrincipal() instanceof OAuth2UserWithId user){
-            userSubscription.put(user.getName(), gameId);
-            connectionService.playerConnectedToGame(UUID.fromString(gameId), user.getId());
+            userSubscription.put(user.getName(), gameId.toString());
+            connectionService.playerConnectedToGame(gameId, user.getId());
         }
     }
 

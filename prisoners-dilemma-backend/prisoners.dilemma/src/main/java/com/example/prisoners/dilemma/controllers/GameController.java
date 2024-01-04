@@ -34,7 +34,7 @@ public class GameController {
         try{
             gameService.playerPlayed(playerId, playerChoice.choice(), UUID.fromString(gameId));
         } catch (PlayerAlreadyPlayedException ex){
-            webSocketMessageSender.sendToSubscribers(gameId, "FIX: ONLY SEND TO USER, NOT TOPIC");
+            webSocketMessageSender.sendToUser(oAuthToken.getPrincipal().getName(), PLAYER_ALREADY_PLAYED);
         }
     }
 

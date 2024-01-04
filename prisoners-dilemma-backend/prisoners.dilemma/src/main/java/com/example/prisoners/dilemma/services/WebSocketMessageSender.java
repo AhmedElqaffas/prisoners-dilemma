@@ -13,4 +13,8 @@ public class WebSocketMessageSender {
     public void sendToSubscribers(String gameId, Object message){
         simpMessagingTemplate.convertAndSend(WebSocketConfig.GAME_TOPIC_PATH + "/" + gameId , message);
     }
+
+    public void sendToUser(String userId, Object message){
+        simpMessagingTemplate.convertAndSendToUser(userId, WebSocketConfig.USER_QUEUE_PATH,message);
+    }
 }
