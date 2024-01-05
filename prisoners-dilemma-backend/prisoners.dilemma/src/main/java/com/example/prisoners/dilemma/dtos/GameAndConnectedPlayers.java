@@ -1,20 +1,20 @@
 package com.example.prisoners.dilemma.dtos;
 
 import com.example.prisoners.dilemma.entities.Game;
+import com.example.prisoners.dilemma.entities.Player;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 public class GameAndConnectedPlayers {
     private Game game;
-    private final List<UUID> players = new ArrayList<>(2);
+    private final List<Player> players = new ArrayList<>(2);
 
     public GameAndConnectedPlayers(Game game){
         this.game = game;
     }
 
-    public void addPlayer(UUID player) {
+    public void addPlayer(Player player) {
         if(players.size() < 2){
             players.add(player);
         }
@@ -24,7 +24,7 @@ public class GameAndConnectedPlayers {
         return game;
     }
 
-    public List<UUID> getPlayers() {
+    public List<Player> getPlayers() {
         return players;
     }
 }

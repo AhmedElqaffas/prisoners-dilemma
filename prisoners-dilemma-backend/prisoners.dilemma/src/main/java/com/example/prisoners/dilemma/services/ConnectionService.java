@@ -2,7 +2,9 @@ package com.example.prisoners.dilemma.services;
 
 import com.example.prisoners.dilemma.dtos.GameAndConnectedPlayers;
 import com.example.prisoners.dilemma.entities.Game;
+import com.example.prisoners.dilemma.entities.Player;
 import com.example.prisoners.dilemma.repositories.AvailableGamesRepo;
+import com.example.prisoners.dilemma.repositories.PlayersRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.user.SimpUser;
 import org.springframework.messaging.simp.user.SimpUserRegistry;
@@ -23,16 +25,20 @@ public class ConnectionService {
     private final GameService gameService;
 
     private final WebSocketMessageSender webSocketMessageSender;
+
+    private final PlayersRepo playersRepo;
     @Autowired
     private SimpUserRegistry simpUserRegistry;
 
     public ConnectionService(AvailableGamesRepo gamesRepo,
                              GameService gameService,
-                             WebSocketMessageSender webSocketMessageSender){
+                             WebSocketMessageSender webSocketMessageSender,
+                             PlayersRepo playersRepo){
 
         this.availableGamesRepo = gamesRepo;
         this.gameService = gameService;
         this.webSocketMessageSender = webSocketMessageSender;
+        this.playersRepo = playersRepo;
     }
 
     /**
@@ -84,10 +90,18 @@ public class ConnectionService {
                 .size();
 
         if(numberPlayersConnectedToGame == 1){
-            availableGamesRepo.createNewGame(gameId, playerId);
+            createGame(gameId, playerId);
         } else if(numberPlayersConnectedToGame == 2){
             startGame(gameId, playerId);
         }
+    }
+
+    private void createGame(UUID gameId, UUID playerId) {
+        Optional<Player> creator = playersRepo.findById(playerId);
+        if(creator.isEmpty()){
+            return;
+        }
+        availableGamesRepo.createNewGame(new Game(gameId), creator.get());
     }
 
     private void startGame(UUID gameId, UUID secondPlayerId) {
@@ -98,7 +112,12 @@ public class ConnectionService {
             return;
         }
 
-        gameAndPlayers.get().addPlayer(secondPlayerId);
+        Optional<Player> secondPlayer = playersRepo.findById(secondPlayerId);
+        if(secondPlayer.isEmpty()){
+            return;
+        }
+
+        gameAndPlayers.get().addPlayer(secondPlayer.get());
         // game is not available anymore, it is in progress
         availableGamesRepo.deleteGame(gameId);
         gameService.startGame(gameAndPlayers.get());

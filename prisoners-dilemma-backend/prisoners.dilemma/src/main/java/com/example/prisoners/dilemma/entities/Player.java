@@ -16,6 +16,7 @@ public class Player {
             foreignKey = @ForeignKey(name = "users_auth_id",
                     foreignKeyDefinition = "FOREIGN KEY (id) REFERENCES public.users_auth(id) ON DELETE CASCADE"))
     private PrisonerDilemmaAuthUser authUser;
+    private int wealth;
 
     private String displayName;
 
@@ -40,6 +41,14 @@ public class Player {
 
     public String getDisplayName() {
         return displayName;
+    }
+
+    public int getWealth() {
+        return wealth;
+    }
+
+    public void setWealth(int wealth) {
+        this.wealth = wealth;
     }
 
     @Override

@@ -2,6 +2,7 @@ package com.example.prisoners.dilemma.repositories;
 
 import com.example.prisoners.dilemma.dtos.GameAndConnectedPlayers;
 import com.example.prisoners.dilemma.entities.Game;
+import com.example.prisoners.dilemma.entities.Player;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -14,9 +15,9 @@ public class AvailableGamesRepo {
         return availableGames;
     }
 
-    public void createNewGame(UUID gameId, UUID creatorId) {
-        GameAndConnectedPlayers gameAndPlayers = new GameAndConnectedPlayers(new Game(gameId));
-        gameAndPlayers.addPlayer(creatorId);
+    public void createNewGame(Game game, Player creator) {
+        GameAndConnectedPlayers gameAndPlayers = new GameAndConnectedPlayers(game);
+        gameAndPlayers.addPlayer(creator);
         availableGames.add(gameAndPlayers);
     }
 

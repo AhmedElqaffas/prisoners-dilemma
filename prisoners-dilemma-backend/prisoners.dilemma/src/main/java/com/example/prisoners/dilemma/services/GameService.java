@@ -26,14 +26,18 @@ public class GameService {
 
     private final InProgressGamesRepo inProgressGamesRepo;
 
+    private final PlayerService playerService;
+
     public GameService(GamesRepo gamesRepo, PlayersRepo playersRepo , PlayersChoicesRepo playerChoiceRepo,
                        WebSocketMessageSender webSocketMessageSender,
-                       InProgressGamesRepo inProgressGamesRepo){
+                       InProgressGamesRepo inProgressGamesRepo,
+                       PlayerService playerService){
         this.gamesRepo = gamesRepo;
         this.playersRepo = playersRepo;
         this.playerChoiceRepo = playerChoiceRepo;
         this.webSocketMessageSender = webSocketMessageSender;
         this.inProgressGamesRepo = inProgressGamesRepo;
+        this.playerService = playerService;
     }
 
 
@@ -48,7 +52,7 @@ public class GameService {
             webSocketMessageSender.sendToSubscribers(gameId.toString(), "No such game exists");
             return;
         }
-        Optional<UUID> playerIdConnectedToGame = getPlayer(playerId, gameAndPlayers.get());
+        Optional<Player> playerIdConnectedToGame = getPlayer(playerId, gameAndPlayers.get());
         if(playerIdConnectedToGame.isEmpty()){
             webSocketMessageSender.sendToSubscribers(gameId.toString(), "Player is not part of the game");
             return;
@@ -60,8 +64,8 @@ public class GameService {
         savePlayerChoice(choice, player.get(), gameAndPlayers.get().getGame());
     }
 
-    private Optional<UUID> getPlayer(UUID playerId, GameAndConnectedPlayers gameAndPlayers){
-        return gameAndPlayers.getPlayers().stream().filter(pid -> pid.equals(playerId))
+    private Optional<Player> getPlayer(UUID playerId, GameAndConnectedPlayers gameAndPlayers){
+        return gameAndPlayers.getPlayers().stream().filter(player -> player.getId().equals(playerId))
                 .findFirst();
     }
 
@@ -101,17 +105,18 @@ public class GameService {
     private void concludeGame(UUID gameId){
         var gameAndChoices = inProgressGamesRepo.get(gameId);
         inProgressGamesRepo.remove(gameId);
-        for(UUID playerId: gameAndChoices.getGameAndPlayers().getPlayers()){
-            webSocketMessageSender.sendToUser(playerId.toString(), getPlayerGameResult(gameAndChoices, playerId));
+        for(Player player: gameAndChoices.getGameAndPlayers().getPlayers()){
+            PlayerGameResultDTO playerGameResult = getPlayerGameResult(gameAndChoices, player);
+            playerService.updatePlayerWealth(player, playerGameResult, gameAndChoices.getGameAndPlayers().getGame());
+            webSocketMessageSender.sendToUser(player.getId().toString(), playerGameResult);
         }
 
     }
-
-    private PlayerGameResultDTO getPlayerGameResult(InProgressGamesRepo.GameAndChoicesDTO gameAndChoices, UUID playerId) {
-        Predicate<PlayerChoice> filterToGetCurrentPlayerChoice = pc -> pc.getPlayer().getId().equals(playerId);
-        Choice playerChoice = getPlayerChoice(gameAndChoices, filterToGetCurrentPlayerChoice).getChoice();
-        Choice otherPlayerChoice = getPlayerChoice(gameAndChoices, filterToGetCurrentPlayerChoice.negate()).getChoice();
-        return new PlayerGameResultDTO(playerChoice, otherPlayerChoice, calculateMoneyGained(playerChoice, otherPlayerChoice));
+    private PlayerGameResultDTO getPlayerGameResult(InProgressGamesRepo.GameAndChoicesDTO gameAndChoices, Player player) {
+        Predicate<PlayerChoice> filterToGetCurrentPlayerChoice = pc -> pc.getPlayer().equals(player);
+        PlayerChoice playerChoice = getPlayerChoice(gameAndChoices, filterToGetCurrentPlayerChoice);
+        PlayerChoice otherPlayerChoice = getPlayerChoice(gameAndChoices, filterToGetCurrentPlayerChoice.negate());
+        return new PlayerGameResultDTO(playerChoice.getChoice(), otherPlayerChoice.getChoice(), calculateMoneyGained(playerChoice, otherPlayerChoice));
     }
 
     private PlayerChoice getPlayerChoice(InProgressGamesRepo.GameAndChoicesDTO gameAndChoices, Predicate<PlayerChoice> playerChoiceFilter) {
@@ -122,17 +127,18 @@ public class GameService {
                 .get();
     }
 
-    private int calculateMoneyGained(Choice playerChoice, Choice otherPlayerChoice) {
-        if(playerChoice.equals(Choice.SPLIT)
-                && otherPlayerChoice.equals(Choice.SPLIT)){
+    private int calculateMoneyGained(PlayerChoice playerChoice, PlayerChoice otherPlayerChoice) {
+        if(playerChoice.getChoice().equals(Choice.SPLIT)
+                && otherPlayerChoice.getChoice().equals(Choice.SPLIT)){
             return 500;
-        } else if(playerChoice.equals(Choice.KEEP)
-            && otherPlayerChoice.equals(Choice.SPLIT)){
-            return 1000;
+        } else if(playerChoice.getChoice().equals(Choice.KEEP)
+            && otherPlayerChoice.getChoice().equals(Choice.SPLIT)){
+            return (int) - (0.5 * playerChoice.getPlayer().getWealth());
+        } else if (playerChoice.getChoice().equals(Choice.SPLIT)
+                && otherPlayerChoice.getChoice().equals(Choice.KEEP)) {
+            return (int) (0.5 * otherPlayerChoice.getPlayer().getWealth());
         } else{
             return 0;
         }
     }
-
-
 }
