@@ -2,6 +2,7 @@ package com.example.prisoners.dilemma.services;
 
 import com.example.prisoners.dilemma.dtos.Choice;
 import com.example.prisoners.dilemma.dtos.GameAndConnectedPlayers;
+import com.example.prisoners.dilemma.dtos.PlayerGameResultDTO;
 import com.example.prisoners.dilemma.entities.Game;
 import com.example.prisoners.dilemma.entities.Player;
 import com.example.prisoners.dilemma.entities.PlayerChoice;
@@ -14,11 +15,10 @@ import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Predicate;
 
 @Service
 public class GameService {
-
-    private static final String GAME_CONCLUDED = "GAME_CONCLUDED";
     private final GamesRepo gamesRepo;
     private final PlayersRepo playersRepo;
     private final PlayersChoicesRepo playerChoiceRepo;
@@ -99,7 +99,40 @@ public class GameService {
     }
 
     private void concludeGame(UUID gameId){
+        var gameAndChoices = inProgressGamesRepo.get(gameId);
         inProgressGamesRepo.remove(gameId);
-        webSocketMessageSender.sendToSubscribers(gameId.toString(), GAME_CONCLUDED);
+        for(UUID playerId: gameAndChoices.getGameAndPlayers().getPlayers()){
+            webSocketMessageSender.sendToUser(playerId.toString(), getPlayerGameResult(gameAndChoices, playerId));
+        }
+
     }
+
+    private PlayerGameResultDTO getPlayerGameResult(InProgressGamesRepo.GameAndChoicesDTO gameAndChoices, UUID playerId) {
+        Predicate<PlayerChoice> filterToGetCurrentPlayerChoice = pc -> pc.getPlayer().getId().equals(playerId);
+        Choice playerChoice = getPlayerChoice(gameAndChoices, filterToGetCurrentPlayerChoice).getChoice();
+        Choice otherPlayerChoice = getPlayerChoice(gameAndChoices, filterToGetCurrentPlayerChoice.negate()).getChoice();
+        return new PlayerGameResultDTO(playerChoice, otherPlayerChoice, calculateMoneyGained(playerChoice, otherPlayerChoice));
+    }
+
+    private PlayerChoice getPlayerChoice(InProgressGamesRepo.GameAndChoicesDTO gameAndChoices, Predicate<PlayerChoice> playerChoiceFilter) {
+        return gameAndChoices.getGameChoices()
+                .stream()
+                .filter(playerChoiceFilter)
+                .findFirst()
+                .get();
+    }
+
+    private int calculateMoneyGained(Choice playerChoice, Choice otherPlayerChoice) {
+        if(playerChoice.equals(Choice.SPLIT)
+                && otherPlayerChoice.equals(Choice.SPLIT)){
+            return 500;
+        } else if(playerChoice.equals(Choice.KEEP)
+            && otherPlayerChoice.equals(Choice.SPLIT)){
+            return 1000;
+        } else{
+            return 0;
+        }
+    }
+
+
 }

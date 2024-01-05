@@ -1,6 +1,5 @@
 package com.example.prisoners.dilemma.controllers;
 
-import com.example.prisoners.dilemma.dtos.OAuth2UserWithId;
 import com.example.prisoners.dilemma.entities.Player;
 import com.example.prisoners.dilemma.services.PlayerService;
 import org.springframework.http.ResponseEntity;
@@ -24,11 +23,11 @@ public class PlayerController {
 
     @GetMapping("player")
     public ResponseEntity<Player> getPlayerDetails(OAuth2AuthenticationToken oAuthToken){
-        if(oAuthToken == null || !(oAuthToken.getPrincipal() instanceof OAuth2UserWithId)){
+        if(oAuthToken == null){
             return ResponseEntity.status(401).build();
         }
 
-        UUID playerId = ((OAuth2UserWithId) oAuthToken.getPrincipal()).getId();
+        UUID playerId = UUID.fromString(oAuthToken.getPrincipal().getName());
 
         Optional<Player> player = playerService.getPlayerDetails(playerId);
         return player.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.badRequest().build());

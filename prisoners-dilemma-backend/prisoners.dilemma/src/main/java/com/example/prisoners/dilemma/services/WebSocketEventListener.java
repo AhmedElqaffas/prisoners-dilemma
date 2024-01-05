@@ -1,6 +1,5 @@
 package com.example.prisoners.dilemma.services;
 
-import com.example.prisoners.dilemma.dtos.OAuth2UserWithId;
 import org.springframework.context.event.EventListener;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
@@ -48,10 +47,9 @@ public class WebSocketEventListener {
             // not uuid, player is subscribing to user queue, not to a game
             return;
         }
-        if(event.getUser() instanceof OAuth2AuthenticationToken token
-            && token.getPrincipal() instanceof OAuth2UserWithId user){
-            userSubscription.put(user.getName(), gameId.toString());
-            connectionService.playerConnectedToGame(gameId, user.getId());
+        if(event.getUser() instanceof OAuth2AuthenticationToken token){
+            userSubscription.put(token.getPrincipal().getName(), gameId.toString());
+            connectionService.playerConnectedToGame(gameId, UUID.fromString(token.getPrincipal().getName()));
         }
     }
 

@@ -34,8 +34,8 @@ public class Player {
         return player;
     }
 
-    public PrisonerDilemmaAuthUser getAuthUser() {
-        return authUser;
+    public UUID getId() {
+        return id;
     }
 
     public String getDisplayName() {

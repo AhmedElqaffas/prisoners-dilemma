@@ -1,7 +1,6 @@
 package com.example.prisoners.dilemma.controllers;
 
 import com.example.prisoners.dilemma.dtos.Choice;
-import com.example.prisoners.dilemma.dtos.OAuth2UserWithId;
 import com.example.prisoners.dilemma.exceptions.PlayerAlreadyPlayedException;
 import com.example.prisoners.dilemma.services.GameService;
 import com.example.prisoners.dilemma.services.WebSocketMessageSender;
@@ -27,14 +26,14 @@ public class GameController {
     }
     @MessageMapping("/topic/game/{gameId}")
     public void play(@RequestBody ChoiceDTO playerChoice, @DestinationVariable String gameId, OAuth2AuthenticationToken oAuthToken) {
-        if(oAuthToken == null || !(oAuthToken.getPrincipal() instanceof OAuth2UserWithId)){
+        if(oAuthToken == null){
             return;
         }
-        UUID playerId = ((OAuth2UserWithId) oAuthToken.getPrincipal()).getId();
+        UUID playerId = UUID.fromString(oAuthToken.getPrincipal().getName());
         try{
             gameService.playerPlayed(playerId, playerChoice.choice(), UUID.fromString(gameId));
         } catch (PlayerAlreadyPlayedException ex){
-            webSocketMessageSender.sendToUser(oAuthToken.getPrincipal().getName(), PLAYER_ALREADY_PLAYED);
+            webSocketMessageSender.sendToUser(playerId.toString(), PLAYER_ALREADY_PLAYED);
         }
     }
 
